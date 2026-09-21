@@ -1,0 +1,38 @@
+{
+  // Copy to ~/.pi/agent/deferred-skill-catalog.json, or point
+  // PI_DEFERRED_SKILL_CATALOG_CONFIG at this file to try it out.
+  //
+  // Every key is optional. Omit `roots` to search Pi's own global skill
+  // locations (~/.pi/agent/skills and ~/.agents/skills).
+
+  // Searched in order. The first root wins when two roots define the same
+  // skill name. ~, $VAR, absolute paths, and paths relative to this file work.
+  "roots": [
+    "~/.pi/agent/skills",
+    "~/.agents/skills",
+    "~/.claude/skills", // skills written for another harness
+    "/absolute/path/to/a/team-skill-repo"
+  ],
+
+  // A bare string blacklists that skill name in every root.
+  //
+  // The object form scopes name matching to skills whose path contains
+  // `pathIncludes` - a plain case-sensitive substring of the absolute path,
+  // not a glob. Omit `names` to drop every skill under that path.
+  "exclude": [
+    "some-skill-you-never-use",
+    { "pathIncludes": "/vendor/makerskills/skills/", "names": ["decide", "ingest"] },
+    { "pathIncludes": "/archived/skills/" }
+  ],
+
+  // Directory names the walk never descends into.
+  "skipDirectories": [".git", "node_modules", "dist"],
+
+  // Safety valve for a root that points somewhere huge. 12 is far deeper than
+  // any real skill tree.
+  "maxDepth": 12,
+
+  // Replace Pi's static <available_skills> block with a short pointer to
+  // search_skills / list_skills. Set false to leave Pi's prompt alone.
+  "stripStaticCatalog": true
+}

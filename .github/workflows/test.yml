@@ -1,0 +1,31 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Node 24 is the oldest line that runs TypeScript tests without a flag.
+        node-version: [24, 26]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm test
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # --omit=peer keeps Pi and typebox out of CI; they are supplied at runtime.
+      - run: npm install --omit=peer
+      - run: npm run typecheck

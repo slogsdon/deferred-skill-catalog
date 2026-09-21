@@ -1,0 +1,47 @@
+{
+  "name": "pi-deferred-skill-catalog",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Defer Pi's skill catalog out of the system prompt and expose it through search and paging tools instead.",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "skills",
+    "agent-skills"
+  ],
+  "license": "MIT",
+  "author": "Shane Logsdon",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/slogsdon/pi-deferred-skill-catalog.git"
+  },
+  "bugs": {
+    "url": "https://github.com/slogsdon/pi-deferred-skill-catalog/issues"
+  },
+  "homepage": "https://github.com/slogsdon/pi-deferred-skill-catalog#readme",
+  "files": [
+    "extensions",
+    "lib",
+    "deferred-skill-catalog.example.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test 'tests/**/*.test.ts'",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "pi": {
+    "extensions": [
+      "./extensions/deferred-skill-catalog.ts"
+    ]
+  }
+}
