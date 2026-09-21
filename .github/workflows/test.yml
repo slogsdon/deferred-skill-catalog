@@ -13,19 +13,23 @@ jobs:
         # Node 24 is the oldest line that runs TypeScript tests without a flag.
         node-version: [24, 26]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node-version }}
+      # No install step, on purpose: the suite imports Node built-ins only, so a
+      # green run here also proves the library has no runtime dependencies.
       - run: npm test
 
   typecheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
-      # --omit=peer keeps Pi and typebox out of CI; they are supplied at runtime.
-      - run: npm install --omit=peer
+      # The extension imports Pi and typebox, so their type declarations have to
+      # be present to typecheck it. npm ci installs the lockfile exactly,
+      # including those peer dependencies.
+      - run: npm ci
       - run: npm run typecheck
