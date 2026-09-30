@@ -1,6 +1,6 @@
 {
   "name": "deferred-skill-catalog",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Defer Pi and Claude Code skill catalogs out of the prompt and search them on demand.",
   "keywords": [
