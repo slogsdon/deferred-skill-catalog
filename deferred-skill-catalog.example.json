@@ -1,9 +1,14 @@
 {
-  // Copy to ~/.pi/agent/deferred-skill-catalog.json, or point
-  // PI_DEFERRED_SKILL_CATALOG_CONFIG at this file to try it out.
+  // Pi:          copy to ~/.pi/agent/deferred-skill-catalog.json, or point
+  //              PI_DEFERRED_SKILL_CATALOG_CONFIG at this file.
+  // Claude Code: copy to ~/.claude/deferred-skill-catalog.json, or point
+  //              CLAUDE_DEFERRED_SKILL_CATALOG_CONFIG at this file.
+  // One file can serve both; symlink it into both places.
   //
-  // Every key is optional. Omit `roots` to search Pi's own global skill
-  // locations (~/.pi/agent/skills and ~/.agents/skills).
+  // Every key is optional. Omit `roots` for the defaults: Pi searches its own
+  // global skill locations (~/.pi/agent/skills and ~/.agents/skills); Claude
+  // Code always indexes its own skills and enabled plugins, and treats `roots`
+  // as extra directories on top.
 
   // Searched in order. The first root wins when two roots define the same
   // skill name. ~, $VAR, absolute paths, and paths relative to this file work.
@@ -32,7 +37,8 @@
   // any real skill tree.
   "maxDepth": 12,
 
-  // Replace Pi's static <available_skills> block with a short pointer to
-  // search_skills / list_skills. Set false to leave Pi's prompt alone.
+  // Pi only: replace Pi's static <available_skills> block with a short pointer
+  // to search_skills / list_skills. Set false to leave Pi's prompt alone.
+  // (Claude Code's equivalent is "skillListingBudgetFraction" in its settings.)
   "stripStaticCatalog": true
 }

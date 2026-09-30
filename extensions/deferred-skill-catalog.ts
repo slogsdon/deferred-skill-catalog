@@ -9,24 +9,18 @@
 import { type ExtensionAPI, getAgentDir } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import {
-  COMMAND_DESCRIPTION_CHARS,
-  COMMAND_PAGE_SIZE,
   DEFAULT_CATALOG_PAGE_SIZE,
-  LIST_DESCRIPTION_CHARS,
   MAX_CATALOG_PAGE_SIZE,
   MAX_SEARCH_RESULTS,
   SEARCH_DEFAULT_LIMIT,
-  SEARCH_DESCRIPTION_CHARS,
   type Skill,
+  commandListing,
   discoverSkills,
   expandSkillCommand,
-  formatSkill,
   hasStaticSkillCatalog,
-  isGenericInventoryQuery,
-  score,
-  selectCatalogPage,
-  tokenize,
-  truncateDescription,
+  listSkillsResult,
+  parseListingArgs,
+  searchSkillsResult,
   withoutStaticSkillCatalog,
 } from "../lib/catalog.ts";
 import { describeConfig, resolveConfig } from "../lib/config.ts";
@@ -58,35 +52,8 @@ export default function deferredSkillCatalog(pi: ExtensionAPI): void {
       ),
     }),
     async execute(_toolCallId, params) {
-      const terms = tokenize(params.query);
-      if (isGenericInventoryQuery(terms)) {
-        return {
-          content: [{ type: "text", text: "This is an inventory request. Use list_skills instead of search_skills." }],
-          details: { matches: [] },
-        };
-      }
-
-      const matches = getSkills()
-        .map((skill) => ({ skill, score: score(skill, terms) }))
-        .filter((match) => match.score > 0)
-        .sort((a, b) => b.score - a.score || a.skill.name.localeCompare(b.skill.name))
-        .slice(0, params.limit ?? SEARCH_DEFAULT_LIMIT);
-      if (matches.length === 0) {
-        return {
-          content: [{ type: "text", text: `No specialized skill matched: ${params.query}` }],
-          details: { matches: [] },
-        };
-      }
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: matches.map(({ skill }) => formatSkill(skill, SEARCH_DESCRIPTION_CHARS)).join("\n"),
-          },
-        ],
-        details: { matches: matches.map(({ skill }) => skill.name) },
-      };
+      const { text, matches } = searchSkillsResult(getSkills(), params.query, params.limit ?? SEARCH_DEFAULT_LIMIT);
+      return { content: [{ type: "text", text }], details: { matches } };
     },
   });
 
@@ -107,27 +74,13 @@ export default function deferredSkillCatalog(pi: ExtensionAPI): void {
       ),
     }),
     async execute(_toolCallId, params) {
-      const catalogPage = selectCatalogPage(
+      const { text, ...details } = listSkillsResult(
         getSkills(),
         params.query,
         params.page ?? 1,
         params.pageSize ?? DEFAULT_CATALOG_PAGE_SIZE,
       );
-      const heading = `Skills ${catalogPage.matches.length === 0 ? 0 : catalogPage.start + 1}-${catalogPage.start + catalogPage.pageSkills.length} of ${catalogPage.matches.length}; page ${catalogPage.page}/${catalogPage.totalPages}.`;
-      const nextPage = catalogPage.page < catalogPage.totalPages ? ` Call list_skills with page ${catalogPage.page + 1} for more.` : "";
-      return {
-        content: [
-          {
-            type: "text",
-            text: `${heading}${nextPage}\n${catalogPage.pageSkills.map((skill) => formatSkill(skill, LIST_DESCRIPTION_CHARS)).join("\n")}`,
-          },
-        ],
-        details: {
-          page: catalogPage.page,
-          totalPages: catalogPage.totalPages,
-          matches: catalogPage.pageSkills.map((skill) => skill.name),
-        },
-      };
+      return { content: [{ type: "text", text }], details };
     },
   });
 
@@ -139,16 +92,8 @@ export default function deferredSkillCatalog(pi: ExtensionAPI): void {
         return;
       }
 
-      const pageMatch = args.match(/(?:^|\s)page=(\d+)\s*$/);
-      const requestedPage = pageMatch ? Number(pageMatch[1]) : 1;
-      const query = args.replace(pageMatch?.[0] ?? "", "").trim() || undefined;
-      const catalogPage = selectCatalogPage(getSkills(), query, requestedPage, COMMAND_PAGE_SIZE);
-      const heading = `Skills ${catalogPage.matches.length === 0 ? 0 : catalogPage.start + 1}-${catalogPage.start + catalogPage.pageSkills.length} of ${catalogPage.matches.length}; page ${catalogPage.page}/${catalogPage.totalPages}.`;
-      const nextPage = catalogPage.page < catalogPage.totalPages ? ` Next: /skills${query ? ` ${query}` : ""} page=${catalogPage.page + 1}` : "";
-      const rows = catalogPage.pageSkills.map(
-        (skill) => `- ${skill.name}: ${truncateDescription(skill.description, COMMAND_DESCRIPTION_CHARS)}`,
-      );
-      ctx.ui.notify(`${heading}${nextPage}\n${rows.join("\n")}`, "info");
+      const { query, page } = parseListingArgs(args);
+      ctx.ui.notify(commandListing(getSkills(), query, page, "/skills"), "info");
     },
   });
 

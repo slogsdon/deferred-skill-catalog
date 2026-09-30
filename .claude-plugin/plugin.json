@@ -1,0 +1,16 @@
+{
+  "name": "deferred-skill-catalog",
+  "version": "0.2.0",
+  "description": "Search skill descriptions on demand instead of listing them every turn. Pairs with skillListingBudgetFraction to list skills name-only.",
+  "author": { "name": "Shane Logsdon" },
+  "homepage": "https://github.com/slogsdon/deferred-skill-catalog",
+  "repository": "https://github.com/slogsdon/deferred-skill-catalog",
+  "license": "MIT",
+  "keywords": ["skills", "context", "agent-skills"],
+  "mcpServers": {
+    "skill-catalog": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/claude/server.ts"]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "deferred-skill-catalog",
+  "owner": { "name": "Shane Logsdon" },
+  "metadata": { "description": "Deferred skill catalog for Claude Code" },
+  "plugins": [
+    {
+      "name": "deferred-skill-catalog",
+      "source": "./",
+      "description": "Search skill descriptions on demand instead of listing them every turn."
+    }
+  ]
+}
