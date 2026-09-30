@@ -28,7 +28,7 @@ function skill(dir: string, name: string, description: string, extra = ""): void
 /**
  * A fake Claude config dir: one user skill, an enabled plugin (default `skills/`
  * plus a manifest-declared dir), a disabled plugin, a project-scoped install for
- * another project, and an extra root holding one copy and one unique skill.
+ * another project, and an extra root holding a drifted copy and one unique skill.
  */
 function fixture(t: { after: (fn: () => void) => void }) {
   const root = makeTempDir(t);
@@ -43,7 +43,7 @@ function fixture(t: { after: (fn: () => void) => void }) {
   write(join(plugin("pdf-kit"), ".claude-plugin", "plugin.json"), JSON.stringify({ name: "pdf-kit", skills: "./more" }));
   skill(join(plugin("off-kit"), "skills"), "hidden", "Should not appear.");
   skill(join(plugin("elsewhere"), "skills"), "scoped", "Installed for another project.");
-  skill(extraRoot, "fill-form", "Fill a PDF form field by field. - user has an AcroForm PDF");
+  skill(extraRoot, "fill-form", "Fill a PDF form, newer wording from a clone that drifted ahead.");
   skill(extraRoot, "agent-only", "Only in the extra root.");
 
   write(

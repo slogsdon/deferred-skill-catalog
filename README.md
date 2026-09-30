@@ -114,9 +114,10 @@ The env var names a file and bypasses discovery. If that file doesn't exist,
 the defaults are used and the problem is reported.
 
 **One file can serve both harnesses.** Symlink it into both places. In Claude
-Code, a root skill that copies an indexed Claude skill is dropped, so Pi's clone
-of an installed plugin doesn't double every search result. A copy means the same
-bare name and the same description.
+Code, a root skill is dropped when its bare name matches an indexed Claude skill.
+That keeps Pi's clone of an installed plugin from doubling every search result,
+even when the clone has drifted a few commits ahead. The Claude copy is the one
+the Skill tool loads.
 
 The file is JSON with `//` comments and trailing commas allowed, so it can
 explain itself. See
