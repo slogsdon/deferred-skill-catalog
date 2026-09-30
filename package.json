@@ -1,28 +1,34 @@
 {
-  "name": "pi-deferred-skill-catalog",
-  "version": "0.1.0",
+  "name": "deferred-skill-catalog",
+  "version": "0.2.0",
   "type": "module",
-  "description": "Defer Pi's skill catalog out of the system prompt and expose it through search and paging tools instead.",
+  "description": "Defer Pi and Claude Code skill catalogs out of the prompt and search them on demand.",
   "keywords": [
     "pi-package",
     "pi",
     "pi-coding-agent",
+    "claude-code",
+    "claude-code-plugin",
     "skills",
-    "agent-skills"
+    "agent-skills",
+    "mcp"
   ],
   "license": "MIT",
   "author": "Shane Logsdon",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/slogsdon/pi-deferred-skill-catalog.git"
+    "url": "git+https://github.com/slogsdon/deferred-skill-catalog.git"
   },
   "bugs": {
-    "url": "https://github.com/slogsdon/pi-deferred-skill-catalog/issues"
+    "url": "https://github.com/slogsdon/deferred-skill-catalog/issues"
   },
-  "homepage": "https://github.com/slogsdon/pi-deferred-skill-catalog#readme",
+  "homepage": "https://github.com/slogsdon/deferred-skill-catalog#readme",
   "files": [
     "extensions",
     "lib",
+    "claude",
+    "commands",
+    ".claude-plugin",
     "deferred-skill-catalog.example.json",
     "README.md",
     "LICENSE"
