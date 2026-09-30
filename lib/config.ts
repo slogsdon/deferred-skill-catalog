@@ -1,9 +1,10 @@
 /**
- * Configuration for pi-deferred-skill-catalog.
+ * Configuration for deferred-skill-catalog, shared by the Pi and Claude Code targets.
  *
  * Deliberately dependency-free: Node built-ins only, so the test suite can load
  * this module directly under `node --test` (no Pi runtime, no typebox, no build
- * step). The Pi-facing wiring lives in `extensions/deferred-skill-catalog.ts`.
+ * step). Harness wiring lives in `extensions/deferred-skill-catalog.ts` (Pi) and
+ * `claude/server.ts` (Claude Code).
  */
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -62,9 +63,9 @@ export function defaultRoots(agentDir: string): string[] {
   return [join(agentDir, "skills"), join(homedir(), ".agents", "skills")];
 }
 
-export function defaultConfig(agentDir: string): CatalogConfig {
+export function defaultConfig(agentDir: string, roots: string[] = defaultRoots(agentDir)): CatalogConfig {
   return {
-    roots: defaultRoots(agentDir),
+    roots: [...roots],
     exclude: [],
     skipDirectories: [...DEFAULT_SKIP_DIRECTORIES],
     maxDepth: DEFAULT_MAX_DEPTH,
@@ -189,9 +190,9 @@ function parseExcludeRule(entry: unknown, index: number, errors: string[]): Excl
   return rule;
 }
 
-function validate(raw: unknown, agentDir: string, baseDir: string, env: NodeJS.ProcessEnv): ResolvedConfig {
+function validate(raw: unknown, defaults: CatalogConfig, baseDir: string, env: NodeJS.ProcessEnv): ResolvedConfig {
   const errors: string[] = [];
-  const config = defaultConfig(agentDir);
+  const config: CatalogConfig = { ...defaults, roots: [...defaults.roots], skipDirectories: [...defaults.skipDirectories] };
 
   if (!isPlainObject(raw)) {
     errors.push("Config must be a JSON object; using built-in defaults.");
@@ -259,22 +260,32 @@ function validate(raw: unknown, agentDir: string, baseDir: string, env: NodeJS.P
 }
 
 /**
- * Load configuration, in this order: the file named by
- * `PI_DEFERRED_SKILL_CATALOG_CONFIG` (which bypasses discovery), then
+ * Load configuration, in this order: the file named by `envVar` (default
+ * `PI_DEFERRED_SKILL_CATALOG_CONFIG`, which bypasses discovery), then
  * `<agentDir>/deferred-skill-catalog.json`, then built-in defaults.
  *
+ * `agentDir` is the harness's config directory (`~/.pi/agent` for Pi,
+ * `~/.claude` for Claude Code). `defaultRoots` replaces Pi's default roots.
+ *
  * Nothing here throws: a missing, unreadable, or malformed file degrades to
- * defaults and records a message for `/skills --config`.
+ * defaults and records a message for `--config`.
  */
-export function resolveConfig(options: { agentDir: string; env?: NodeJS.ProcessEnv }): ResolvedConfig {
+export function resolveConfig(options: {
+  agentDir: string;
+  env?: NodeJS.ProcessEnv;
+  envVar?: string;
+  defaultRoots?: string[];
+}): ResolvedConfig {
   const env = options.env ?? process.env;
-  const override = env[CONFIG_ENV_VAR];
+  const envVar = options.envVar ?? CONFIG_ENV_VAR;
+  const defaults = defaultConfig(options.agentDir, options.defaultRoots);
+  const override = env[envVar];
   const explicit = typeof override === "string" && override.trim() !== "";
   const path = explicit ? expandPath(override.trim(), options.agentDir, env) : join(options.agentDir, CONFIG_FILE_NAME);
 
   if (!existsSync(path)) {
-    const errors = explicit ? [`${CONFIG_ENV_VAR} points at ${path}, which does not exist; using built-in defaults.`] : [];
-    return { config: defaultConfig(options.agentDir), source: { errors } };
+    const errors = explicit ? [`${envVar} points at ${path}, which does not exist; using built-in defaults.`] : [];
+    return { config: defaults, source: { errors } };
   }
 
   let raw: string;
@@ -282,7 +293,7 @@ export function resolveConfig(options: { agentDir: string; env?: NodeJS.ProcessE
     raw = readFileSync(path, "utf8");
   } catch (error) {
     return {
-      config: defaultConfig(options.agentDir),
+      config: defaults,
       source: { errors: [`Could not read ${path}: ${describeError(error)}; using built-in defaults.`] },
     };
   }
@@ -292,12 +303,12 @@ export function resolveConfig(options: { agentDir: string; env?: NodeJS.ProcessE
     parsed = JSON.parse(stripJsonComments(raw));
   } catch (error) {
     return {
-      config: defaultConfig(options.agentDir),
+      config: defaults,
       source: { path, errors: [`Could not parse ${path}: ${describeError(error)}; using built-in defaults.`] },
     };
   }
 
-  const resolved = validate(parsed, options.agentDir, dirname(path), env);
+  const resolved = validate(parsed, defaults, dirname(path), env);
   return { config: resolved.config, source: { path, errors: resolved.source.errors } };
 }
 

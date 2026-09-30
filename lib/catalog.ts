@@ -13,6 +13,8 @@ export type Skill = {
   description: string;
   filePath: string;
   baseDir: string;
+  /** Name to pass to the harness's native skill loader (Claude Code's Skill tool). Absent: read the file. */
+  invokeAs?: string;
 };
 
 /** Pi's static skill catalog markers; see Pi's `formatSkillsForPrompt`. */
@@ -108,9 +110,12 @@ function readSkill(filePath: string, isExcluded: ExclusionMatcher): Skill | unde
     const frontmatter = frontmatterBlock(readFrontmatterHead(filePath)) ?? "";
     const name = frontmatterValue(frontmatter, "name") ?? basename(join(filePath, ".."));
     if (isExcluded(filePath, name)) return undefined;
+    // Claude Code lists `description - when_to_use`; search should see the same text.
+    const description = frontmatterValue(frontmatter, "description") ?? FALLBACK_DESCRIPTION;
+    const whenToUse = frontmatterValue(frontmatter, "when_to_use");
     return {
       name,
-      description: frontmatterValue(frontmatter, "description") ?? FALLBACK_DESCRIPTION,
+      description: whenToUse ? `${description} - ${whenToUse}` : description,
       filePath,
       baseDir: join(filePath, ".."),
     };
@@ -180,7 +185,10 @@ export function truncateDescription(description: string, maxChars: number): stri
 }
 
 export function formatSkill(skill: Skill, descriptionChars: number): string {
-  return `- ${skill.name}: ${truncateDescription(skill.description, descriptionChars)}\n  Read ${skill.filePath} before applying it.`;
+  const load = skill.invokeAs === undefined
+    ? `Read ${skill.filePath} before applying it.`
+    : `Load with the Skill tool: ${skill.invokeAs}`;
+  return `- ${skill.name}: ${truncateDescription(skill.description, descriptionChars)}\n  ${load}`;
 }
 
 export function selectCatalogPage(skills: Skill[], query: string | undefined, requestedPage: number, pageSize: number) {
@@ -232,4 +240,56 @@ export function withoutStaticSkillCatalog(systemPrompt: string, enabled = true):
 
 Specialized workflows are deferred to minimize default context. Use search_skills for a task-specific capability, or list_skills when the user asks what is installed. Read the selected SKILL.md before applying it.
 ${systemPrompt.slice(end + SKILL_CATALOG_END.length)}`;
+}
+
+/** `search_skills` result text, shared by every harness. */
+export function searchSkillsResult(skills: Skill[], query: string, limit = SEARCH_DEFAULT_LIMIT): { text: string; matches: string[] } {
+  const terms = tokenize(query);
+  if (isGenericInventoryQuery(terms)) {
+    return { text: "This is an inventory request. Use list_skills instead of search_skills.", matches: [] };
+  }
+  const matches = skills
+    .map((skill) => ({ skill, score: score(skill, terms) }))
+    .filter((match) => match.score > 0)
+    .sort((a, b) => b.score - a.score || a.skill.name.localeCompare(b.skill.name))
+    .slice(0, Math.max(1, Math.min(limit, MAX_SEARCH_RESULTS)));
+  if (matches.length === 0) return { text: `No specialized skill matched: ${query}`, matches: [] };
+  return {
+    text: matches.map(({ skill }) => formatSkill(skill, SEARCH_DESCRIPTION_CHARS)).join("\n"),
+    matches: matches.map(({ skill }) => skill.name),
+  };
+}
+
+/** `list_skills` result text, shared by every harness. */
+export function listSkillsResult(skills: Skill[], query: string | undefined, requestedPage = 1, pageSize = DEFAULT_CATALOG_PAGE_SIZE) {
+  const catalogPage = selectCatalogPage(skills, query, requestedPage, Math.max(1, Math.min(pageSize, MAX_CATALOG_PAGE_SIZE)));
+  const nextPage = catalogPage.page < catalogPage.totalPages ? ` Call list_skills with page ${catalogPage.page + 1} for more.` : "";
+  return {
+    text: `${catalogPageHeading(catalogPage)}${nextPage}\n${catalogPage.pageSkills.map((skill) => formatSkill(skill, LIST_DESCRIPTION_CHARS)).join("\n")}`,
+    page: catalogPage.page,
+    totalPages: catalogPage.totalPages,
+    matches: catalogPage.pageSkills.map((skill) => skill.name),
+  };
+}
+
+export function catalogPageHeading(catalogPage: ReturnType<typeof selectCatalogPage>): string {
+  const { matches, start, pageSkills, page, totalPages } = catalogPage;
+  return `Skills ${matches.length === 0 ? 0 : start + 1}-${start + pageSkills.length} of ${matches.length}; page ${page}/${totalPages}.`;
+}
+
+/** Human listing for `/skills`-style commands: 10 rows, short descriptions. */
+export function commandListing(skills: Skill[], query: string | undefined, requestedPage: number, nextCommand: string): string {
+  const catalogPage = selectCatalogPage(skills, query, requestedPage, COMMAND_PAGE_SIZE);
+  const nextPage = catalogPage.page < catalogPage.totalPages ? ` Next: ${nextCommand}${query ? ` ${query}` : ""} page=${catalogPage.page + 1}` : "";
+  const rows = catalogPage.pageSkills.map((skill) => `- ${skill.name}: ${truncateDescription(skill.description, COMMAND_DESCRIPTION_CHARS)}`);
+  return `${catalogPageHeading(catalogPage)}${nextPage}\n${rows.join("\n")}`;
+}
+
+/** Split `/skills` arguments into a query and a `page=N` suffix. */
+export function parseListingArgs(args: string): { query: string | undefined; page: number } {
+  const pageMatch = args.match(/(?:^|\s)page=(\d+)\s*$/);
+  return {
+    page: pageMatch ? Number(pageMatch[1]) : 1,
+    query: args.replace(pageMatch?.[0] ?? "", "").trim() || undefined,
+  };
 }
