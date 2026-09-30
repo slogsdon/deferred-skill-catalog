@@ -130,17 +130,17 @@ function bareName(name: string): string {
 
 /**
  * Native sources first, then configured extra roots; the first skill seen for
- * a name wins. A root skill that is a copy of a native one (same bare name and
- * description, e.g. Pi's git clone of an installed plugin) is dropped, so one
- * config file can serve both harnesses without doubling search results.
+ * a name wins. A root skill whose bare name matches a native skill is dropped:
+ * it is almost always a copy (e.g. Pi's git clone of an installed plugin, often
+ * a few commits ahead), and the native one is the copy the Skill tool loads.
+ * That lets one config file serve both harnesses without doubling results.
  */
 export function mergeSources(sources: ClaudeSource[]): Skill[] {
   const byName = new Map<string, Skill>();
   const native = new Set<string>();
   for (const skill of sources.flatMap((source) => source.skills)) {
-    const identity = `${bareName(skill.name)}\u0000${skill.description}`;
-    if (skill.invokeAs !== undefined) native.add(identity);
-    else if (native.has(identity)) continue;
+    if (skill.invokeAs !== undefined) native.add(bareName(skill.name));
+    else if (native.has(bareName(skill.name))) continue;
     if (!byName.has(skill.name)) byName.set(skill.name, skill);
   }
   return [...byName.values()].sort((left, right) => left.name.localeCompare(right.name));
