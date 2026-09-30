@@ -277,7 +277,7 @@ happens to be on the machine running it.
 
 ```bash
 npm test && npm run typecheck
-git tag v0.2.0 && git push --tags
+git tag v0.2.1 && git push --tags
 npm publish --access public
 ```
 

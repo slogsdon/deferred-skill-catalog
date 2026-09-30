@@ -28,7 +28,7 @@ import { describeConfig, resolveConfig } from "../lib/config.ts";
 import { CLAUDE_CONFIG_ENV_VAR, type ClaudeSource, claudeConfigDir, discoverClaudeSkills, mergeSources, readJson } from "./sources.ts";
 
 const SERVER_NAME = "deferred-skill-catalog";
-const SERVER_VERSION = "0.2.0";
+const SERVER_VERSION = "0.2.1";
 const FALLBACK_PROTOCOL_VERSION = "2025-06-18";
 
 export const INSTRUCTIONS =
