@@ -312,6 +312,20 @@ test("the deferral notice replaces the static catalog block only", () => {
   assert.match(stripped, /Use search_skills for a task-specific capability/);
 });
 
+test("matches Pi's real system-prompt text, which is .trim()'d before the <skills> wrapper", () => {
+  // Pi's formatSkillsForPrompt() builds the block as "\n\nThe following
+  // skills..." but system-prompt.js calls .trim() on it before wrapping it
+  // in <skills>...</skills>, so the live prompt has no blank line before
+  // the text. A marker that only matched the untrimmed form never fired.
+  const prompt = `<skills>\n${SKILL_CATALOG_START}\nUse the read tool...\n\n<available_skills>\n  <skill>\n    <name>x</name>\n  </skill>\n${SKILL_CATALOG_END}\n</skills>`;
+
+  assert.equal(hasStaticSkillCatalog(prompt), true);
+  const stripped = withoutStaticSkillCatalog(prompt);
+  assert.ok(stripped.startsWith("<skills>\n"));
+  assert.ok(stripped.endsWith("\n</skills>"));
+  assert.equal(stripped.includes("<name>x</name>"), false);
+});
+
 test("a prompt without the markers is returned unchanged", () => {
   const prompt = "no catalog here";
   assert.equal(hasStaticSkillCatalog(prompt), false);

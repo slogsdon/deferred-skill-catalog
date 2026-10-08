@@ -17,8 +17,16 @@ export type Skill = {
   invokeAs?: string;
 };
 
-/** Pi's static skill catalog markers; see Pi's `formatSkillsForPrompt`. */
-export const SKILL_CATALOG_START = "\n\nThe following skills provide specialized instructions for specific tasks.";
+/**
+ * Pi's static skill catalog markers; see Pi's `formatSkillsForPrompt`.
+ *
+ * No leading `\n\n`: `system-prompt.js` calls `.trim()` on the formatted
+ * block before wrapping it in `<skills>...</skills>`, so the live prompt has
+ * only `<skills>\nThe following skills...`, not a blank line first. Matching
+ * on the untrimmed text here meant `hasStaticSkillCatalog` never matched the
+ * real prompt and the catalog was never deferred.
+ */
+export const SKILL_CATALOG_START = "The following skills provide specialized instructions for specific tasks.";
 export const SKILL_CATALOG_END = "</available_skills>";
 
 /**
