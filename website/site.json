@@ -1,0 +1,8 @@
+{
+  "slug": "deferred-skill-catalog",
+  "name": "Deferred Skill Catalog",
+  "origin": "https://projects.logsdon.io",
+  "description": "Keeps skill descriptions out of the prompt for Pi and Claude Code and makes them searchable on demand.",
+  "lastmod": "2026-10-08",
+  "source": "https://github.com/slogsdon/deferred-skill-catalog"
+}
